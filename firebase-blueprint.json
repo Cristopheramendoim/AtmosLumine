@@ -1,0 +1,33 @@
+{
+  "entities": {
+    "ServiceRequest": {
+      "title": "Service Request",
+      "description": "A client request for lighting technician services",
+      "type": "object",
+      "properties": {
+        "clientName": { "type": "string", "maxLength": 100 },
+        "clientPhone": { "type": "string", "maxLength": 30 },
+        "clientEmail": { "type": "string", "maxLength": 100 },
+        "eventType": { "type": "string", "maxLength": 50 },
+        "eventLocation": { "type": "string", "maxLength": 200 },
+        "eventDate": { "type": "string" },
+        "equipments": {
+          "type": "array",
+          "items": { "type": "string", "maxLength": 50 },
+          "maxItems": 10
+        },
+        "paymentMethod": { "type": "string", "enum": ["credit_card", "pix", "ted", "negotiate"] },
+        "details": { "type": "string", "maxLength": 1000 },
+        "status": { "type": "string", "enum": ["pending", "contacted", "completed"] },
+        "createdAt": { "type": "string", "description": "Server timestamp" }
+      },
+      "required": ["clientName", "clientPhone", "clientEmail", "eventType", "eventLocation", "eventDate", "paymentMethod", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/serviceRequests/{requestId}": {
+      "schema": { "$ref": "#/entities/ServiceRequest" },
+      "description": "Collection of lighting service requests"
+    }
+  }
+}
