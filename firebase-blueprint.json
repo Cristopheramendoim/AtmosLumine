@@ -7,7 +7,6 @@
       "properties": {
         "clientName": { "type": "string", "maxLength": 100 },
         "clientPhone": { "type": "string", "maxLength": 30 },
-        "clientEmail": { "type": "string", "maxLength": 100 },
         "eventType": { "type": "string", "maxLength": 50 },
         "eventLocation": { "type": "string", "maxLength": 200 },
         "eventDate": { "type": "string" },
@@ -21,7 +20,7 @@
         "status": { "type": "string", "enum": ["pending", "contacted", "completed"] },
         "createdAt": { "type": "string", "description": "Server timestamp" }
       },
-      "required": ["clientName", "clientPhone", "clientEmail", "eventType", "eventLocation", "eventDate", "paymentMethod", "status", "createdAt"]
+      "required": ["clientName", "clientPhone", "eventType", "eventLocation", "eventDate", "paymentMethod", "status", "createdAt"]
     }
   },
   "firestore": {

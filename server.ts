@@ -24,10 +24,10 @@ app.post("/api/send-email", async (req, res) => {
       });
 
       const mailOptions = {
-        from: `"Atmos Iluminação" <${process.env.SMTP_USER}>`,
+        from: `"Nexo Automação" <${process.env.SMTP_USER}>`,
         to: clientEmail,
-        subject: 'Confirmação de Solicitação - Atmos',
-        text: `Olá ${clientName},\n\nRecebemos sua solicitação para ${eventType} em ${eventLocation} no dia ${eventDate}.\n\nNossa equipe de técnicos de iluminação entrará em contato em breve via WhatsApp.\n\nEquipamentos de interesse: ${eqList}\n\nDetalhes:\n${details || 'Nenhum'}\n\nObrigado,\nEquipe Atmos`
+        subject: 'Confirmação de Solicitação - Nexo Automação',
+        text: `Olá ${clientName},\n\nRecebemos sua solicitação de projeto de automação residencial para: ${eventType} no endereço ${eventLocation} com previsão para ${eventDate}.\n\nNossa equipe entrará em contato em breve via WhatsApp para alinhar os detalhes da visita e do orçamento.\n\nDispositivos e Soluções selecionadas:\n${eqList}\n\nDetalhes Adicionais:\n${details || 'Nenhum'}\n\nObrigado,\nEquipe Nexo Automação`
       };
 
       await transporter.sendMail(mailOptions);

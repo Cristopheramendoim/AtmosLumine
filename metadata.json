@@ -1,6 +1,6 @@
 {
-  "name": "Atmos Iluminação",
-  "description": "Plataforma de contratação de serviços de técnico de iluminação para eventos e shows. Inclui um formulário de pedido interativo e painel administrativo.",
+  "name": "Nexo Automação",
+  "description": "Plataforma de contratação de serviços de consultoria, configuração e sincronização de dispositivos de casa inteligente (Alexa, Google Home, interruptores, iluminação e rotinas).",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { collection, query, orderBy, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Calendar, MapPin, Phone, Mail, User as UserIcon, LogOut, CheckCircle, Clock, Trash2, ArrowLeft, CreditCard, Lightbulb } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -32,7 +32,10 @@ export default function Admin() {
       }));
       setRequests(data);
       setLoading(false);
-    }, (err) => {
+    }, (err : any) => {
+      if (err && (err.code === 'permission-denied' || (err.message && err.message.includes('permission')))) {
+        handleFirestoreError(err, OperationType.LIST, 'serviceRequests');
+      }
       console.error(err);
       setError(`Erro ao carregar dados: ${err.message || 'Desconhecido'}`);
       setLoading(false);
@@ -58,37 +61,44 @@ export default function Admin() {
   const updateStatus = async (id: string, newStatus: string) => {
     try {
       await updateDoc(doc(db, 'serviceRequests', id), { status: newStatus });
-    } catch (err) {
+    } catch (err: any) {
+      if (err && (err.code === 'permission-denied' || (err.message && err.message.includes('permission')))) {
+        handleFirestoreError(err, OperationType.UPDATE, `serviceRequests/${id}`);
+      }
       console.error("Failed to update status", err);
-      alert("Erro ao atualizar status");
     }
   };
 
   const deleteRequest = async (id: string) => {
-    if (!window.confirm("Tem certeza que deseja excluir este pedido?")) return;
     try {
       await deleteDoc(doc(db, 'serviceRequests', id));
-    } catch (err) {
+    } catch (err: any) {
+      if (err && (err.code === 'permission-denied' || (err.message && err.message.includes('permission')))) {
+        handleFirestoreError(err, OperationType.DELETE, `serviceRequests/${id}`);
+      }
       console.error("Failed to delete", err);
-      alert("Erro ao excluir pedido");
     }
   };
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[var(--bg)] flex flex-col items-center justify-center text-white p-6">
-        <form onSubmit={handleLogin} className="max-w-md w-full bg-[var(--bg-soft)] border border-white/10 rounded-3xl p-8 text-center shadow-xl">
-          <div className="w-16 h-16 bg-black/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/5">
-            <UserIcon className="w-8 h-8 text-amber-500" />
+      <div className="min-h-screen bg-[#05070d] flex flex-col items-center justify-center text-white p-6 relative overflow-hidden font-sans">
+        {/* Ambient background mesh glows */}
+        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-purple-600/5 rounded-full blur-[100px] pointer-events-none" />
+
+        <form onSubmit={handleLogin} className="max-w-md w-full border border-cyan-500/15 rounded-3xl p-8 text-center bg-slate-950/60 backdrop-blur-md shadow-2xl relative z-10">
+          <div className="relative w-16 h-16 rounded-full bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(6,182,212,0.15)]">
+            <UserIcon className="w-8 h-8 text-cyan-400" />
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white mb-2">Painel do Técnico</h1>
-          <p className="text-sm text-slate-400 mb-6">Digite sua senha de acesso para gerenciar os pedidos.</p>
+          <h1 className="text-2.5xl font-bold tracking-tight text-white mb-2 bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-300">Painel do Integrador</h1>
+          <p className="text-xs text-slate-400 mb-6">Digite sua senha de acesso para gerenciar os projetos SmartFlow.</p>
           
           <input 
             type="password" 
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50 transition-colors mb-4 text-center tracking-widest"
+            className="w-full px-4 py-3.5 rounded-xl border border-slate-800 bg-slate-900/60 focus:border-cyan-400 focus:bg-slate-900 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-4 focus:ring-cyan-500/10 transition-all font-sans text-center tracking-widest"
             placeholder="••••••••"
             required
           />
@@ -97,14 +107,14 @@ export default function Admin() {
 
           <button 
             type="submit"
-            className="w-full py-3 px-4 rounded-xl bg-amber-500 text-slate-900 font-medium flex items-center justify-center gap-3 hover:bg-amber-400 transition-colors"
+            className="w-full py-3.5 rounded-xl font-bold text-center text-slate-950 bg-gradient-to-r from-cyan-400 to-teal-400 hover:from-cyan-300 hover:to-teal-300 shadow-[0_4px_25px_rgba(6,182,212,0.25)] transition-all duration-300 cursor-pointer"
           >
             Entrar no Painel
           </button>
           
           <div className="mt-8">
-            <Link to="/" className="text-sm text-slate-500 hover:text-amber-500 transition-colors inline-flex items-center gap-1">
-              <ArrowLeft className="w-3 h-3" /> Voltar para o Site
+            <Link to="/" className="text-xs text-slate-500 hover:text-cyan-400 transition-colors inline-flex items-center gap-1.5 font-medium">
+              <ArrowLeft className="w-3.5 h-3.5" /> Voltar para o Site
             </Link>
           </div>
         </form>
@@ -113,20 +123,33 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-white font-sans selection:bg-amber-500/30">
+    <div className="min-h-screen bg-[#05070d] text-white font-sans selection:bg-cyan-500 selection:text-black relative overflow-x-hidden">
+      {/* Background ambient mesh glows */}
+      <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-10 left-10 w-[600px] h-[600px] bg-purple-600/5 rounded-full blur-[140px] pointer-events-none" />
+
       {/* Admin Header */}
-      <header className="border-b border-white/10 bg-[var(--bg-soft)] sticky top-0 z-50">
+      <header className="border-b border-cyan-500/10 bg-[#05070d]/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <h1 className="font-semibold text-lg tracking-tight text-white">Dashboard do Técnico</h1>
-            {loading && <div className="w-4 h-4 rounded-full border-2 border-amber-500 border-t-transparent animate-spin"></div>}
-          </div>
+          <Link to="/" className="flex items-center gap-3 cursor-pointer select-none">
+            <div className="relative w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-400 to-emerald-400 flex items-center justify-center p-[2px] shadow-[0_0_15px_rgba(6,182,212,0.4)]">
+              <div className="w-full h-full rounded-full bg-[#05070d] flex items-center justify-center">
+                <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-cyan-400 to-emerald-400 animate-pulse" />
+              </div>
+            </div>
+            <div className="flex flex-col">
+              <span className="font-bold text-lg tracking-tight text-white flex items-center">
+                SmartFlow <span className="text-[10px] font-semibold text-cyan-400 ml-1.5 px-1.5 py-0.5 rounded bg-cyan-950/50 border border-cyan-800/30 font-mono">Painel</span>
+              </span>
+            </div>
+          </Link>
           
           <div className="flex items-center gap-4">
-            <div className="text-sm text-slate-400 hidden sm:block">Acesso Administrativo</div>
+            {loading && <div className="w-4 h-4 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin"></div>}
+            <div className="text-xs font-mono text-slate-400 hidden sm:block bg-slate-900/40 px-2.5 py-1 rounded-md border border-slate-800">Acesso Administrativo</div>
             <button 
               onClick={handleLogout}
-              className="px-4 py-2 text-sm rounded-lg border border-slate-700 hover:bg-slate-800 transition-colors flex items-center gap-2"
+              className="text-xs border border-cyan-500/30 hover:bg-cyan-500/10 text-cyan-400 hover:text-white rounded-lg font-medium px-4 py-2 hover:border-cyan-400 transition-all flex items-center gap-2 cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
               Sair
@@ -135,7 +158,7 @@ export default function Admin() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-12">
+      <main className="max-w-7xl mx-auto px-6 py-12 relative z-10">
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-8 flex items-center gap-3 text-sm">
             <span className="shrink-0">⚠️</span> {error}
@@ -144,31 +167,34 @@ export default function Admin() {
 
         <div className="flex flex-col gap-8">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold tracking-tight">Pedidos Recentes ({requests.length})</h2>
+            <h2 className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+              Solicitações Recebidas ({requests.length})
+            </h2>
           </div>
 
           {requests.length === 0 && !loading && !error ? (
-            <div className="text-center py-24 bg-[var(--bg-soft)] rounded-2xl border border-dashed border-white/10">
-              <p className="text-[#8a8377]">Nenhum pedido encontrado no momento.</p>
+            <div className="text-center py-24 bg-slate-950/40 rounded-2xl border border-dashed border-cyan-500/10">
+              <p className="text-slate-500">Nenhum pedido encontrado no momento.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {requests.map(req => (
-                <div key={req.id} className="bg-[var(--bg-soft)] border border-white/5 rounded-2xl p-6 shadow-lg shadow-black/20 flex flex-col">
+                <div key={req.id} className="bg-slate-950/60 border border-cyan-500/15 rounded-2xl p-6 shadow-xl shadow-black/20 flex flex-col relative overflow-hidden transition-all duration-300 hover:border-cyan-500/25">
+                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-cyan-500 to-teal-500 opacity-60" />
                   
                   {/* Card Header (Status + Actions) */}
                   <div className="flex justify-between items-start mb-4">
-                    <div className={`px-2.5 py-1 text-xs font-medium rounded-full uppercase tracking-wider ${
-                      req.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                      req.status === 'contacted' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
-                      'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                    <div className={`px-2.5 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider border ${
+                      req.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                      req.status === 'contacted' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' :
+                      'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
                     }`}>
                       {req.status === 'pending' ? 'Pendente' : req.status === 'contacted' ? 'Contatado' : 'Concluído'}
                     </div>
                     
                     <button 
                       onClick={() => deleteRequest(req.id)}
-                      className="text-slate-600 hover:text-red-400 p-1 transition-colors"
+                      className="text-slate-500 hover:text-red-400 p-1 transition-colors cursor-pointer"
                       title="Excluir pedido"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -176,38 +202,53 @@ export default function Admin() {
                   </div>
 
                   {/* Client Info */}
-                  <div className="mb-5 pb-5 border-b border-white/5">
-                    <h3 className="text-lg font-medium text-white mb-3">{req.clientName}</h3>
+                  <div className="mb-5 pb-5 border-b border-cyan-500/10">
+                    <h3 className="text-lg font-bold text-white mb-2">{req.clientName}</h3>
                     <div className="space-y-2 text-sm text-slate-400">
-                      <p className="flex items-center gap-2"><Phone className="w-3.5 h-3.5" /> <a href={`https://wa.me/${req.clientPhone.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" className="hover:text-amber-400 hover:underline">{req.clientPhone}</a></p>
-                      <p className="flex items-center gap-2"><Mail className="w-3.5 h-3.5" /> {req.clientEmail}</p>
+                      <p className="flex items-center gap-2">
+                        <Phone className="w-3.5 h-3.5 text-cyan-400" /> 
+                        <a 
+                          href={`https://wa.me/${req.clientPhone.replace(/\D/g,'')}`} 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          className="hover:text-cyan-400 hover:underline inline-flex items-center font-medium"
+                        >
+                          {req.clientPhone}
+                        </a>
+                      </p>
+                      {req.clientEmail && (
+                        <p className="flex items-center gap-2">
+                          <Mail className="w-3.5 h-3.5 text-cyan-400" /> 
+                          <span className="break-all">{req.clientEmail}</span>
+                        </p>
+                      )}
                     </div>
                   </div>
 
                   {/* Event Info */}
                   <div className="flex-1 space-y-4 mb-6">
                     <div>
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Evento</p>
-                      <p className="text-sm text-slate-200">{req.eventType}</p>
+                      <p className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-1">Tipo de Serviço</p>
+                      <p className="text-sm font-semibold text-slate-200">{req.eventType}</p>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> Data</p>
-                        <p className="text-sm text-slate-200">{req.eventDate ? new Date(req.eventDate).toLocaleDateString('pt-BR') : 'N/A'}</p>
+                        <p className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> Data</p>
+                        <p className="text-sm text-slate-200">{req.eventDate ? new Date(req.eventDate).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'N/A'}</p>
                       </div>
                       <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-1"><MapPin className="w-3 h-3" /> Local</p>
+                        <p className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-1 flex items-center gap-1"><MapPin className="w-3 h-3" /> Local</p>
                         <p className="text-sm text-slate-200 truncate" title={req.eventLocation}>{req.eventLocation}</p>
                       </div>
                     </div>
 
                     {req.equipments && req.equipments.length > 0 && (
                       <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-1"><Lightbulb className="w-3 h-3" /> Equipamentos</p>
-                        <div className="flex flex-wrap gap-1 mt-1">
+                        <p className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-1 flex items-center gap-1"><Lightbulb className="w-3 h-3" /> Soluções / Dispositivos</p>
+                        <div className="flex flex-wrap gap-1.5 mt-1.5">
                           {req.equipments.map((eq: string) => (
-                            <span key={eq} className="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded text-[11px] whitespace-nowrap">
+                            <span key={eq} className="px-2 py-0.5 bg-cyan-950/40 text-cyan-300 border border-cyan-500/10 rounded text-[10px] whitespace-nowrap">
                               {eq}
                             </span>
                           ))}
@@ -217,8 +258,8 @@ export default function Admin() {
                     
                     {req.details && (
                       <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Detalhes</p>
-                        <p className="text-sm text-slate-400 bg-slate-950 p-3 rounded-lg border border-white/5 max-h-24 overflow-y-auto w-full custom-scrollbar leading-relaxed">
+                        <p className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-1">Notas adicionais / Observações</p>
+                        <p className="text-xs text-slate-400 bg-slate-900/40 p-3 rounded-lg border border-cyan-500/5 max-h-24 overflow-y-auto w-full custom-scrollbar leading-relaxed font-sans text-left">
                           {req.details}
                         </p>
                       </div>
@@ -226,20 +267,20 @@ export default function Admin() {
                   </div>
 
                   {/* Controls */}
-                  <div className="flex gap-2 mt-auto">
+                  <div className="flex gap-2.5 mt-auto pt-4 border-t border-cyan-500/10">
                     {req.status === 'pending' && (
-                      <button onClick={() => updateStatus(req.id, 'contacted')} className="flex-1 py-2 text-sm bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors border border-blue-500/20 font-medium">
+                      <button onClick={() => updateStatus(req.id, 'contacted')} className="flex-1 py-2.5 text-xs bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 active:scale-95 duration-100 rounded-xl transition-all border border-cyan-500/25 font-bold cursor-pointer">
                         Marcar como Contatado
                       </button>
                     )}
                     {(req.status === 'pending' || req.status === 'contacted') && (
-                      <button onClick={() => updateStatus(req.id, 'completed')} className="flex-1 py-2 text-sm bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 rounded-lg transition-colors border border-emerald-500/20 font-medium flex items-center justify-center gap-1">
-                        <CheckCircle className="w-4 h-4" /> Concluir
+                      <button onClick={() => updateStatus(req.id, 'completed')} className="flex-1 py-2.5 text-xs bg-gradient-to-r from-cyan-400 to-teal-400 hover:from-cyan-300 hover:to-teal-300 text-slate-950 px-4 active:scale-95 duration-100 rounded-xl font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shadow-lg shadow-cyan-500/10">
+                        <CheckCircle className="w-3.5 h-3.5" /> Concluir
                       </button>
                     )}
                     {req.status === 'completed' && (
-                      <button onClick={() => updateStatus(req.id, 'pending')} className="w-full py-2 text-sm bg-slate-800 text-slate-400 hover:bg-slate-700 rounded-lg transition-colors flex items-center justify-center gap-1 border border-white/5">
-                        <Clock className="w-4 h-4" /> Voltar para Pendente
+                      <button onClick={() => updateStatus(req.id, 'pending')} className="w-full py-2.5 text-xs bg-slate-900/60 hover:bg-slate-800 text-slate-300 hover:text-white rounded-xl transition-all flex items-center justify-center gap-1.5 border border-slate-800 cursor-pointer">
+                        <Clock className="w-3.5 h-3.5" /> Voltar para Pendente
                       </button>
                     )}
                   </div>

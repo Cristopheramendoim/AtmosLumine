@@ -11,17 +11,13 @@ service cloud.firestore {
     }
 
     function isValidServiceRequest(data) {
-      let validKeys = data.keys().hasAll(['clientName', 'clientPhone', 'clientEmail', 'eventType', 'eventLocation', 'eventDate', 'paymentMethod', 'status', 'createdAt']);
-      return validKeys
-        && data.clientName is string 
+      return data.clientName is string 
         && data.clientPhone is string 
-        && data.clientEmail is string 
         && data.eventType is string 
         && data.eventLocation is string 
         && data.eventDate is string 
         && data.paymentMethod is string
-        && data.status is string
-        && data.createdAt is timestamp;
+        && data.status is string;
     }
 
     match /serviceRequests/{requestId} {
