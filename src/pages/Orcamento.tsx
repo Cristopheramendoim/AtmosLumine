@@ -13,7 +13,8 @@ import {
   Layers, 
   MessageSquare, 
   CheckCircle, 
-  AlertCircle 
+  AlertCircle,
+  Mail
 } from 'lucide-react';
 
 const TECHNICIAN_PHONE = "5512988212915"; 
@@ -28,6 +29,7 @@ export default function Orcamento() {
   const [formData, setFormData] = useState({
     clientName: '',
     clientPhone: '',
+    clientEmail: '',
     eventType: '',
     eventLocation: '',
     eventDate: '',
@@ -128,6 +130,28 @@ export default function Orcamento() {
       });
 
       const eqs = formData.equipments.length > 0 ? formData.equipments.join(', ') : 'A combinar';
+
+      // Disparar e-mails de recibo do cliente e cópia de segurança para o integrador
+      try {
+        await fetch('/api/send-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            clientName: formData.clientName,
+            clientEmail: formData.clientEmail,
+            clientPhone: formData.clientPhone,
+            eventType: formData.eventType,
+            eventLocation: locationToSave,
+            eventDate: formData.eventDate,
+            details: formData.details,
+            equipments: formData.equipments
+          })
+        });
+      } catch (emailErr) {
+        console.error("Erro ao disparar api de e-mail:", emailErr);
+      }
 
       const messageText = `Olá, meu nome é ${formData.clientName}. Acabei de gerar meu resumo SmartFlow!
 
@@ -244,6 +268,20 @@ ${formData.details || 'Nenhuma'}`;
                       onChange={handleChange} 
                       placeholder="(12) 99999-9999" 
                       type="tel" 
+                      className="w-full px-4 py-3.5 rounded-xl border border-slate-800 bg-slate-900/60 focus:border-cyan-400 focus:bg-slate-900 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-4 focus:ring-cyan-500/10 transition-all font-sans"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-slate-300 uppercase tracking-widest flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-cyan-400" /> E-mail (Opcional - Para receber o recibo)
+                    </label>
+                    <input 
+                      name="clientEmail" 
+                      value={formData.clientEmail} 
+                      onChange={handleChange} 
+                      placeholder="Ex: carlos@email.com" 
+                      type="email" 
                       className="w-full px-4 py-3.5 rounded-xl border border-slate-800 bg-slate-900/60 focus:border-cyan-400 focus:bg-slate-900 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-4 focus:ring-cyan-500/10 transition-all font-sans"
                     />
                   </div>

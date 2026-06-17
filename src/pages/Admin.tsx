@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { collection, query, orderBy, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, updateDoc, doc, deleteDoc, getDoc, setDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Calendar, MapPin, Phone, Mail, User as UserIcon, LogOut, CheckCircle, Clock, Trash2, ArrowLeft, CreditCard, Lightbulb } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -11,15 +11,65 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Email Configuration State Hooks
+  const [adminEmail, setAdminEmail] = useState('');
+  const [smtpUser, setSmtpUser] = useState('');
+  const [smtpPass, setSmtpPass] = useState('');
+  const [smtpHost, setSmtpHost] = useState('smtp.gmail.com');
+  const [smtpPort, setSmtpPort] = useState(465);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
+
   useEffect(() => {
     let unsubscribe: () => void = () => {};
     if (isAuthenticated) {
       unsubscribe = fetchRequests();
+      fetchEmailSettings();
     }
     return () => {
       unsubscribe();
     };
   }, [isAuthenticated]);
+
+  const fetchEmailSettings = async () => {
+    try {
+      const docRef = doc(db, 'settings', 'email');
+      const settingsSnap = await getDoc(docRef);
+      if (settingsSnap.exists()) {
+        const data = settingsSnap.data();
+        setAdminEmail(data.adminEmail || '');
+        setSmtpUser(data.smtpUser || '');
+        setSmtpPass(data.smtpPass || '');
+        setSmtpHost(data.smtpHost || 'smtp.gmail.com');
+        setSmtpPort(data.smtpPort || 465);
+      }
+    } catch (err) {
+      console.error("Erro ao buscar configurações de email:", err);
+    }
+  };
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingSettings(true);
+    setSettingsSaved(false);
+    try {
+      const docRef = doc(db, 'settings', 'email');
+      await setDoc(docRef, {
+        adminEmail,
+        smtpUser,
+        smtpPass,
+        smtpHost,
+        smtpPort
+      });
+      setSettingsSaved(true);
+      setTimeout(() => setSettingsSaved(false), 3000);
+    } catch (err) {
+      console.error("Erro ao salvar configurações de email:", err);
+      setError("Falha ao salvar configurações de email.");
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
 
   const fetchRequests = () => {
     setLoading(true);
@@ -164,6 +214,144 @@ export default function Admin() {
             <span className="shrink-0">⚠️</span> {error}
           </div>
         )}
+
+        {/* Configurações de E-mail Card */}
+        <div className="mb-10 border border-cyan-500/15 rounded-3xl p-6 md:p-8 bg-slate-950/60 backdrop-blur-md shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-cyan-500 via-teal-400 to-purple-600 opacity-60" />
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-cyan-500/10">
+            <div>
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <span>⚙️</span> Configurações de E-mail & Registro
+              </h3>
+              <p className="text-slate-400 text-xs mt-1">
+                Configure o e-mail do seu padrasto para guardar os detalhes e active o envio de recibos automáticos para os clientes.
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSaveSettings} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                  E-mail Profissional do Seu Padrasto (Guarda info)
+                </label>
+                <input
+                  type="email"
+                  value={adminEmail}
+                  onChange={(e) => setAdminEmail(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-800 bg-slate-900/60 focus:border-cyan-400 focus:bg-slate-900 text-white placeholder-slate-600 text-sm focus:outline-none focus:ring-4 focus:ring-cyan-500/10 transition-all font-sans"
+                  placeholder="Ex: padrastopro@empresa.com"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                  Seu E-mail Remetente SMTP (Servidor que envia)
+                </label>
+                <input
+                  type="email"
+                  value={smtpUser}
+                  onChange={(e) => setSmtpUser(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-800 bg-slate-900/60 focus:border-cyan-400 focus:bg-slate-900 text-white placeholder-slate-600 text-sm focus:outline-none focus:ring-4 focus:ring-cyan-500/10 transition-all font-sans"
+                  placeholder="Ex: patetadj_@gmail.com"
+                />
+              </div>
+            </div>
+
+            <div className="bg-slate-900/40 p-3.5 rounded-2xl border border-cyan-500/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <span className="text-xs font-bold text-cyan-400 uppercase tracking-widest block">✈ Configuração Rápida do Servidor</span>
+                <span className="text-[11px] text-slate-400 block mt-0.5">Preencha de forma automática os servidores padrão do Gmail ou do Outlook / Office365</span>
+              </div>
+              <div className="flex gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSmtpHost('smtp.gmail.com');
+                    setSmtpPort(465);
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-300 text-xs font-bold transition-all cursor-pointer border border-red-500/10"
+                >
+                  Gmail (Porta 465)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSmtpHost('smtp.office365.com');
+                    setSmtpPort(587);
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 text-xs font-bold transition-all cursor-pointer border border-blue-500/10"
+                >
+                  Outlook / Hotmail
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                  Senha do SMTP (Senha de Aplicativo)
+                </label>
+                <input
+                  type="password"
+                  value={smtpPass}
+                  onChange={(e) => setSmtpPass(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-800 bg-slate-900/60 focus:border-cyan-400 focus:bg-slate-900 text-white placeholder-slate-600 text-sm focus:outline-none focus:ring-4 focus:ring-cyan-500/10 transition-all font-sans"
+                  placeholder="••••••••••••••••"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                  Servidor Host SMTP
+                </label>
+                <input
+                  type="text"
+                  value={smtpHost}
+                  onChange={(e) => setSmtpHost(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-800 bg-slate-900/60 focus:border-cyan-400 focus:bg-slate-900 text-white placeholder-slate-600 text-sm focus:outline-none focus:ring-4 focus:ring-cyan-500/10 transition-all font-sans"
+                  placeholder="smtp.gmail.com"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                  Porta SMTP
+                </label>
+                <input
+                  type="number"
+                  value={smtpPort}
+                  onChange={(e) => setSmtpPort(Number(e.target.value))}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-800 bg-slate-900/60 focus:border-cyan-400 focus:bg-slate-900 text-white placeholder-slate-600 text-sm focus:outline-none focus:ring-4 focus:ring-cyan-500/10 transition-all font-sans"
+                  placeholder="465"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+              <p className="text-[11px] text-slate-500 max-w-lg leading-relaxed">
+                💡 <strong>Dica de Envio Real:</strong> Se usar Gmail como SMTP, crie uma <strong>"Senha de Aplicativo"</strong> da Conta Google em (Gerenciar Conta Google &gt; Segurança &gt; Senha de Aplicativo) para preencher a senha de SMTP com sucesso. Sem SMTP configurado, o sistema executa o modo simulador imprimindo nos logs.
+              </p>
+              
+              <div className="flex items-center gap-4 self-end sm:self-auto">
+                {settingsSaved && (
+                  <span className="text-emerald-400 text-xs font-bold font-mono animate-pulse">
+                    ✓ Salvo com Sucesso!
+                  </span>
+                )}
+                <button
+                  type="submit"
+                  disabled={isSavingSettings}
+                  className="px-6 py-3 rounded-xl font-bold text-xs text-slate-950 bg-gradient-to-r from-cyan-400 to-teal-400 hover:from-cyan-300 hover:to-teal-300 shadow-[0_4px_20px_rgba(6,182,212,0.25)] transition-all duration-300 cursor-pointer disabled:opacity-50"
+                >
+                  {isSavingSettings ? 'Salvando...' : 'Salvar Configurações'}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
 
         <div className="flex flex-col gap-8">
           <div className="flex items-center justify-between">
