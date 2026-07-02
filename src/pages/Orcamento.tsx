@@ -174,11 +174,30 @@ ${formData.details || 'Nenhuma'}`;
       
       // Google Tag tracking on submission and WhatsApp redirect
       if (typeof (window as any).gtag === 'function') {
+        const userData: any = {};
+        if (formData.clientEmail) {
+          userData.email = formData.clientEmail.trim().toLowerCase();
+        }
+        if (formData.clientPhone) {
+          let cleanPhone = formData.clientPhone.replace(/\D/g, '');
+          if (cleanPhone) {
+            if (!cleanPhone.startsWith('55') && cleanPhone.length <= 11) {
+              cleanPhone = '55' + cleanPhone;
+            }
+            userData.phone_number = '+' + cleanPhone;
+          }
+        }
+
+        if (Object.keys(userData).length > 0) {
+          (window as any).gtag('set', 'user_data', userData);
+        }
+
         (window as any).gtag('event', 'conversion', {
-          'send_to': 'AW-16952977766',
+          'send_to': 'AW-16952977766/Ddi-CIyQnckcEObS55M_',
           'value': 1.0,
           'currency': 'BRL'
         });
+        
         (window as any).gtag('event', 'submit_budget_request', {
           'event_category': 'Engagement',
           'event_label': 'Pedido de Orçamento Realizado'
