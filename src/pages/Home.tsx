@@ -37,6 +37,15 @@ export default function Home() {
 
   const openWhatsApp = (customText?: string) => {
     const text = customText || "Olá! Gostaria de conversar com um especialista da SmartFlow sobre automação inteligente para minha residência.";
+    
+    // Google Tag track click
+    if (typeof (window as any).gtag === 'function') {
+      (window as any).gtag('event', 'click_whatsapp', {
+        'event_category': 'Contact',
+        'event_label': 'Conversa com Especialista'
+      });
+    }
+
     window.open(`https://wa.me/${TECHNICIAN_PHONE}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
@@ -459,7 +468,7 @@ export default function Home() {
                     <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center mx-auto shadow-[0_0_15px_rgba(16,185,129,0.2)]">
                       <CheckCircle className="w-5 h-5" />
                     </div>
-                    <p className="text-[10px] font-mono text-emerald-400">"Alexa, ligar o cinema"</p>
+                    <p className="text-[10px] font-mono text-emerald-400">"Alexa, ligar cinema"</p>
                     <div className="flex justify-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-bounce" />
                       <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-bounce delay-100" />
@@ -617,7 +626,7 @@ export default function Home() {
       {/* FAQ or Help Section */}
       <section id="contato" className="py-20 px-6 max-w-4xl mx-auto relative z-10">
         <div className="text-center mb-12">
-          <h2 className="text-2xl font-bold text-white mb-2">Possui algugma dúvida rápida?</h2>
+          <h2 className="text-2xl font-bold text-white mb-2">Possui alguma dúvida rápida?</h2>
           <p className="text-slate-400 text-sm">Separamos respostas rápidas para te deixar confortável com o seu projeto de automação.</p>
         </div>
         

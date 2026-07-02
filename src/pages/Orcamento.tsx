@@ -172,6 +172,19 @@ ${formData.details || 'Nenhuma'}`;
 
       const waUrl = `https://wa.me/${TECHNICIAN_PHONE}?text=${encodeURIComponent(messageText)}`;
       
+      // Google Tag tracking on submission and WhatsApp redirect
+      if (typeof (window as any).gtag === 'function') {
+        (window as any).gtag('event', 'conversion', {
+          'send_to': 'AW-16952977766',
+          'value': 1.0,
+          'currency': 'BRL'
+        });
+        (window as any).gtag('event', 'submit_budget_request', {
+          'event_category': 'Engagement',
+          'event_label': 'Pedido de Orçamento Realizado'
+        });
+      }
+
       setWaLink(waUrl);
       setStep(3);
       
@@ -538,6 +551,14 @@ ${formData.details || 'Nenhuma'}`;
                       href={waLink} 
                       target="_blank" 
                       rel="noopener noreferrer" 
+                      onClick={() => {
+                        if (typeof (window as any).gtag === 'function') {
+                          (window as any).gtag('event', 'click_manual_whatsapp_success', {
+                            'event_category': 'Contact',
+                            'event_label': 'Conversa no WhatsApp Sucesso'
+                          });
+                        }
+                      }}
                       className="inline-block px-6 py-3.5 sm:px-10 sm:py-4 bg-[#00b289] hover:bg-[#00ca9a] text-white rounded-xl font-bold shadow-xl shadow-emerald-500/20 hover:-translate-y-0.5 transition-transform cursor-pointer text-xs sm:text-sm"
                     >
                       Iniciar Conversa no WhatsApp
