@@ -10,6 +10,7 @@ export default function Admin() {
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   // Email Configuration State Hooks
   const [adminEmail, setAdminEmail] = useState('');
@@ -19,6 +20,12 @@ export default function Admin() {
   const [smtpPort, setSmtpPort] = useState(465);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
+
+  useEffect(() => {
+    const isAuth = sessionStorage.getItem('admin_authenticated') === 'true';
+    setIsAuthenticated(isAuth);
+    setCheckingAuth(false);
+  }, []);
 
   useEffect(() => {
     let unsubscribe: () => void = () => {};
@@ -92,19 +99,30 @@ export default function Admin() {
     });
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    if (!password) {
+      setError('Por favor, digite a senha de acesso.');
+      setLoading(false);
+      return;
+    }
+
     if (password === 'pateta14972021') {
+      sessionStorage.setItem('admin_authenticated', 'true');
       setIsAuthenticated(true);
       setError('');
     } else {
       setError('Senha incorreta.');
     }
+    setLoading(false);
   };
 
   const handleLogout = () => {
+    sessionStorage.removeItem('admin_authenticated');
     setIsAuthenticated(false);
-    setPassword('');
     setRequests([]);
   };
 
@@ -130,6 +148,17 @@ export default function Admin() {
     }
   };
 
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-[#05070d] flex items-center justify-center text-white font-sans">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin"></div>
+          <p className="text-xs text-slate-400">Verificando sessão de segurança...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#05070d] flex flex-col items-center justify-center text-white p-6 relative overflow-hidden font-sans">
@@ -137,32 +166,38 @@ export default function Admin() {
         <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none" />
         <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-purple-600/5 rounded-full blur-[100px] pointer-events-none" />
 
-        <form onSubmit={handleLogin} className="max-w-md w-full border border-cyan-500/15 rounded-3xl p-8 text-center bg-slate-950/60 backdrop-blur-md shadow-2xl relative z-10">
+        <form onSubmit={handleLogin} className="max-w-md w-full border border-cyan-500/15 rounded-3xl p-8 bg-slate-950/60 backdrop-blur-md shadow-2xl relative z-10">
           <div className="relative w-16 h-16 rounded-full bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(6,182,212,0.15)]">
             <UserIcon className="w-8 h-8 text-cyan-400" />
           </div>
-          <h1 className="text-2.5xl font-bold tracking-tight text-white mb-2 bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-300">Painel do Integrador</h1>
-          <p className="text-xs text-slate-400 mb-6">Digite sua senha de acesso para gerenciar os projetos SmartFlow.</p>
+          <h1 className="text-2.5xl font-bold tracking-tight text-white mb-2 text-center bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-300">Painel do Integrador</h1>
+          <p className="text-xs text-slate-400 mb-6 text-center">Digite sua senha de acesso para gerenciar os projetos SmartFlow.</p>
           
-          <input 
-            type="password" 
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-3.5 rounded-xl border border-slate-800 bg-slate-900/60 focus:border-cyan-400 focus:bg-slate-900 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-4 focus:ring-cyan-500/10 transition-all font-sans text-center tracking-widest"
-            placeholder="••••••••"
-            required
-          />
+          <div className="space-y-4 mb-6">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 text-left">Senha de Acesso</label>
+              <input 
+                type="password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-slate-800 bg-slate-900/60 focus:border-cyan-400 focus:bg-slate-900 text-white placeholder-slate-600 text-sm focus:outline-none focus:ring-4 focus:ring-cyan-500/10 transition-all font-sans text-center tracking-widest"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+          </div>
           
-          {error && <p className="text-red-400 text-xs mb-4">{error}</p>}
+          {error && <p className="text-red-400 text-xs mb-4 text-center">{error}</p>}
 
           <button 
             type="submit"
-            className="w-full py-3.5 rounded-xl font-bold text-center text-slate-950 bg-gradient-to-r from-cyan-400 to-teal-400 hover:from-cyan-300 hover:to-teal-300 shadow-[0_4px_25px_rgba(6,182,212,0.25)] transition-all duration-300 cursor-pointer"
+            disabled={loading}
+            className="w-full py-3.5 rounded-xl font-bold text-center text-slate-950 bg-gradient-to-r from-cyan-400 to-teal-400 hover:from-cyan-300 hover:to-teal-300 shadow-[0_4px_25px_rgba(6,182,212,0.25)] transition-all duration-300 cursor-pointer disabled:opacity-50"
           >
-            Entrar no Painel
+            {loading ? 'Verificando...' : 'Entrar no Painel'}
           </button>
           
-          <div className="mt-8">
+          <div className="mt-6 text-center">
             <Link to="/" className="text-xs text-slate-500 hover:text-cyan-400 transition-colors inline-flex items-center gap-1.5 font-medium">
               <ArrowLeft className="w-3.5 h-3.5" /> Voltar para o Site
             </Link>

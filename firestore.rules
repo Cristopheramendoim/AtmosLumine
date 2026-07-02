@@ -1,38 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isAdmin() {
-      // Allowing open access because the user requested a hardcoded frontend password instead of Google Auth for the prototype.
-      return true;
-    }
-
-    function isValidServiceRequest(data) {
-      return data.clientName is string 
-        && data.clientPhone is string 
-        && data.eventType is string 
-        && data.eventLocation is string 
-        && data.eventDate is string 
-        && data.paymentMethod is string
-        && data.status is string
-        && (!('clientEmail' in data) || data.clientEmail is string);
-    }
-
-    match /serviceRequests/{requestId} {
-      // Anyone can create a request
-      allow create: if isValidServiceRequest(request.resource.data) 
-        && request.resource.data.status == 'pending'
-        && request.resource.data.createdAt == request.time;
-      
-      // Only admin can view and update
-      allow read: if isAdmin();
-      allow update: if isAdmin() 
-        && isValidServiceRequest(request.resource.data)
-        && request.resource.data.createdAt == resource.data.createdAt;
-      
-      allow delete: if isAdmin();
-    }
-
-    match /settings/{settingId} {
+    match /{document=**} {
       allow read, write: if true;
     }
   }
